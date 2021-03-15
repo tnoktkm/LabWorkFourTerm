@@ -15,34 +15,16 @@ class Matrix {
     */
 
 private:
-    matrix_t a_;
-    column_t b_;
-
-public:
-    //constructor
-    Matrix(const matrix_t &a_, const column_t &b_) : a_(a_), b_(b_) {}
-
-    //output matrix
-    void getMatrix() {
-        for (size_t i = 0; i < a_.size(); ++i) {
-            for (size_t j = 0; j < a_[0].size(); ++j) {
-                std::cout << std::setw(8) << std::setprecision(4) << a_[i][j] << " ";
-            }
-            std::cout << "|" << std::setprecision(4) << std::setw(8) << b_[i];
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-    }
-
+    matrix_t coefs;
+    column_t freeCoefs;
     /*
- 
     a[0].size ==== count column(only go on diagonal - important!!! )
     :k:  ->  k-column, and from k to vector.size  
-     
-     */   
+     */  
+
     int getHeadElementColumn(size_t k) {
-        for (size_t i = k; i < a_.size(); ++i) {
-            if (a_[i][k] != 0) {
+        for (size_t i = k; i < coefs.size(); ++i) {
+            if (coefs[i][k] != 0) {
                 return i;
             }
         }
@@ -52,68 +34,72 @@ public:
     void groundingColumn(size_t k) {
 
         // :coef:  ->  coefficient first addendum (in k-row)
-        double coef = a_[k][k];
+        double coef = coefs[k][k];
 
-        for (size_t m = k; m < a_.size(); ++m) {
-            a_[k][m] /= coef;
+        for (size_t m = k; m < coefs.size(); ++m) {
+            coefs[k][m] /= coef;
         }
-        b_[k] /= coef;
+        freeCoefs[k] /= coef;
 
-        for (size_t i = k + 1; i < a_.size(); ++i) {
-            double coefficient = a_[i][k] / a_[k][k];
-            for (size_t j = k; j < a_[0].size(); ++j) {
-                a_[i][j] = a_[i][j] - (coefficient * a_[k][j]);
+        for (size_t i = k + 1; i < coefs.size(); ++i) {
+            double coefficient = coefs[i][k] / coefs[k][k];
+            for (size_t j = k; j < coefs[0].size(); ++j) {
+                coefs[i][j] = coefs[i][j] - (coefficient * coefs[k][j]);
             }
-            b_[i] = b_[i] - (coefficient * b_[k]);
+            freeCoefs[i] = freeCoefs[i] - (coefficient * freeCoefs[k]);
         }   
     }
 
+public:
+    //constructor
+    Matrix(const matrix_t &coefs, const column_t &freeCoefs) : coefs(coefs), freeCoefs(freeCoefs) {}
+     
     //getting vector a
-    matrix_t& geta() {
-        return a_;
+    matrix_t getA() {
+        return coefs;
     }
 
     //getting vector b
-    column_t& getB() {
-        return b_;
+    column_t getB() {
+        return freeCoefs;
+    }
+
+    void forwardRunGaus() {
+        for (size_t i = 0; i < coefs.size(); ++i) {
+
+            size_t element = getHeadElementColumn(i); 
+            coefs[element].swap(coefs[i]); // swap rows to the surface
+            groundingColumn(i);
+        }
+        freeCoefs.back() /= coefs.back().back();
+        coefs.back().back() = 1;
+    }
+
+    std::vector<double> reverseGaus() {
+        column_t x(coefs[0].size());
+        for (int i = coefs[0].size() - 1; i >= 0; --i) {
+            double sum = 0;
+            for (size_t j = i + 1; j < coefs[0].size(); ++j) {
+                sum += coefs[i][j] * x[j];
+            }
+            x[i] = freeCoefs[i] - sum;
+        }
+        return x;
     }
 
 };
 
 
-Matrix forwardRunGaus(Matrix &test) {
-    for (size_t i = 0; i < test.geta().size(); ++i) {
 
-        size_t element = test.getHeadElementColumn(i); 
-        test.geta()[element].swap(test.geta()[i]); // swap rows to the surface
-        test.groundingColumn(i);
-    }
-    test.getB().back() /= test.geta().back().back();
-    test.geta().back().back() = 1;
 
-    return test;
-}
-
-column_t reverseGaus(Matrix test) {
-    column_t x(test.geta()[0].size());
-    for (int i = test.geta()[0].size() - 1; i >= 0; --i) {
-        double sum = 0;
-        for (size_t j = i + 1; j < test.geta()[0].size(); ++j) {
-            sum += test.geta()[i][j] * x[j];
-        }
-        x[i] = test.getB()[i] - sum;
-    }
-    return x;
-}
-
-void outputVector(column_t x) {
+void printVector(column_t x) {
     for (size_t i = 0; i < x.size(); ++i) {
         std::cout << "x" << i + 1 << " =" << std::setw(8) << std::setprecision(4) << x[i] << std::endl;
     }
     std::cout << std::endl;
 }
 
-void checkinganswer(matrix_t a, column_t x) {
+void printRightAnswer(matrix_t a, column_t x) {
     for (size_t i = 0; i < a.size(); ++i) {
         double sumRow = 0; 
         
@@ -125,6 +111,17 @@ void checkinganswer(matrix_t a, column_t x) {
     std::cout << std::endl;
 }
 
+ //output matrix
+void printMatrix(Matrix a) {
+    for (size_t i = 0; i < a.getA().size(); ++i) {
+        for (size_t j = 0; j < a.getA()[0].size(); ++j) {
+            std::cout << std::setw(8) << std::setprecision(4) << a.getA()[i][j] << " ";
+        }
+        std::cout << "|" << std::setprecision(4) << std::setw(8) << a.getB()[i];
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
 
 
 
@@ -138,16 +135,17 @@ int main() {
                                 {-0.443,  0.297,  1.234,  0.484,  0.849, 0.619}
                                         };
                                             
-    column_t               b = { 0.424, -0.005,  0.939, -0.589, -0.588, -0.433};
+    column_t b = { 0.424, -0.005,  0.939, -0.589, -0.588, -0.433};
 
     Matrix test(a, b);
     
-    test.getMatrix();
-    forwardRunGaus(test).getMatrix();
+    printMatrix(test);
+    test.forwardRunGaus();
+    printMatrix(test);
     
-    column_t x = reverseGaus(test);
-    outputVector(x);
+    column_t x = test.reverseGaus();
+    printVector(x);
     
-    checkinganswer(a, x);
+    printRightAnswer(a, x);
 
 }
