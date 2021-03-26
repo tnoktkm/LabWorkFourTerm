@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <functional>
 
 double fx(double x){
     return sin(x + 2) - 1.5;
@@ -10,16 +11,22 @@ double fy(double y){
     return 0.5 - cos(y - 2);
 }
 
+struct ComputationResult {
+  double x;  // x-coordinate intersection
+  double y;  // y-coordinate intersection
+  size_t iterations_number = 0;  //count iterations that you need for accuracy.
+  
+};
 
-
-int main() {
-double e = 1e-6;
-int n = 0;
-double x1 = 1, x2, y0;
-double delta;
-
+ComputationResult FindIntersection(std::function<void(double)> first, std::function<void(double)> second, double eps) {
+    
+    double x1 = 1, x2;  //x1-start approximation, x2 - help variable.
+    double y0;          //y0-point intersection in y-axis
+    double delta;       //delta-current error approximation
+    ComputationResult result;
+    
     do{
-    n++;
+    result.iterations_number++;
 
     y0 = fx(x1);
     x2 = fy(y0);
@@ -27,10 +34,19 @@ double delta;
     x1 = fy(y0);
     delta = fabs(x1-x2);
     
-    std::cout << std::setprecision(4) << std::setw(12) << delta << "   x1 = " << x1 << "   x2 = " << x2 << std::endl;
-    }while(delta > e);
+   }while(delta > eps);
 
-    std::cout << std::endl;
-    std::cout << std::setprecision(4) << std::setw(12) << "We find a solve for "<< n <<" iterations, in x0 = " << x1 << "   y0 =" << y0 << std::endl;
+   result.x = x1;
+   result.y = y0;
+
+   return result;
+}
+
+
+int main() {
+    double eps = 1e-6;  //bottom border approximation
+    ComputationResult result = FindIntersection(fx, fy, eps);   //finding intersection two function with :eps: approximation.
+    std::cout << result.x << " " << result.y << std::endl;
+
     return 0;
 }
